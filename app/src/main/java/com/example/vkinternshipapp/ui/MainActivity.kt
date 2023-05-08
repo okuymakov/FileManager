@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
 import android.view.View
+import android.webkit.MimeTypeMap
 import android.widget.FrameLayout
 import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
@@ -16,6 +17,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.lifecycle.Lifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -25,6 +27,7 @@ import com.example.vkinternshipapp.core.launchOnLifecycle
 import com.example.vkinternshipapp.core.toCharSequence
 import com.example.vkinternshipapp.models.FileModel
 import com.example.vkinternshipapp.ui.adapter.FileAdapter
+import java.io.File
 
 class MainActivity : AppCompatActivity(R.layout.activity_main) {
     private val fileAdapter by lazy { FileAdapter(::onClick) }
@@ -94,7 +97,23 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
     private fun onClick(file: FileModel) {
         if (file.isDirectory) {
             viewModel.onAction(MainAction.MoveToDirectory(file.path))
+        } else {
+            openFile(file)
         }
+    }
+
+    private fun openFile(file: FileModel) {
+        val uri = FileProvider.getUriForFile(
+            applicationContext,
+            Constants.PROVIDER_AUTHORITY,
+            File(file.path)
+        )
+        val type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(file.type) ?: "text/plain"
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, type)
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        }
+        startActivity(intent)
     }
 
     private fun doOnPermissions(block: () -> Unit) {
