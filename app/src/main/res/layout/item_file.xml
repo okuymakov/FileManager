@@ -45,7 +45,7 @@
         android:clickable="true"
         app:layout_constraintEnd_toEndOf="parent"
         android:focusable="true"
-        android:contentDescription="@string/ic_more_actions" />
+        android:contentDescription="@string/more_actions_cd" />
     <TextView
         android:id="@+id/file_date"
         android:layout_width="wrap_content"

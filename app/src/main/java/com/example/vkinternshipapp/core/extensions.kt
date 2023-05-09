@@ -1,7 +1,11 @@
 package com.example.vkinternshipapp.core
 
 import android.content.Context
+import android.view.MenuItem
+import android.view.View
+import androidx.annotation.MenuRes
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.PopupMenu
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -44,10 +48,21 @@ fun Long.formatFileSize(context: Context): String {
     }
 }
 
-fun AppCompatActivity.launchOnLifecycle(state: Lifecycle.State, block: suspend CoroutineScope.() -> Unit) {
+fun AppCompatActivity.launchOnLifecycle(
+    state: Lifecycle.State,
+    block: suspend CoroutineScope.() -> Unit
+) {
     lifecycleScope.launch {
         repeatOnLifecycle(state) {
             block()
         }
+    }
+}
+
+fun View.showPopup(@MenuRes menuRes: Int, onClick: ((MenuItem) -> Boolean)? = null) {
+    PopupMenu(context, this).apply {
+        setOnMenuItemClickListener(onClick)
+        menuInflater.inflate(menuRes, menu)
+        show()
     }
 }

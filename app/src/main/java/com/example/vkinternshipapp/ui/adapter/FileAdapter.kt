@@ -10,11 +10,13 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.vkinternshipapp.R
 import com.example.vkinternshipapp.core.format
 import com.example.vkinternshipapp.core.formatFileSize
-import com.example.vkinternshipapp.models.FileModel
 import com.example.vkinternshipapp.core.toIconRes
+import com.example.vkinternshipapp.models.FileModel
 
-class FileAdapter(private val onClick: (FileModel) -> Unit) :
-    RecyclerView.Adapter<FileAdapter.ViewHolder>() {
+class FileAdapter(
+    private val onClick: (FileModel) -> Unit,
+    private val onMoreClick: (FileModel, View) -> Unit
+) : RecyclerView.Adapter<FileAdapter.ViewHolder>() {
     private val data = mutableListOf<FileModel>()
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_file, parent, false)
@@ -24,7 +26,7 @@ class FileAdapter(private val onClick: (FileModel) -> Unit) :
     override fun getItemCount() = data.size
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(data[position], onClick)
+        holder.bind(data[position], onClick, onMoreClick)
     }
 
     fun submitData(newData: List<FileModel>) {
@@ -41,8 +43,13 @@ class FileAdapter(private val onClick: (FileModel) -> Unit) :
         private val icon: ImageView = root.findViewById(R.id.file_icon)
         private val size: TextView = root.findViewById(R.id.file_size_or_count)
         private val createdAt: TextView = root.findViewById(R.id.file_date)
+        private val iconMore: ImageView = root.findViewById(R.id.ic_more)
 
-        fun bind(file: FileModel, onClick: (FileModel) -> Unit) {
+        fun bind(
+            file: FileModel,
+            onClick: (FileModel) -> Unit,
+            onMoreClick: (FileModel, View) -> Unit
+        ) {
             name.text = if (file.isDirectory) {
                 file.name
             } else root.context.getString(R.string.file_name_with_ext, file.name, file.type)
@@ -57,6 +64,7 @@ class FileAdapter(private val onClick: (FileModel) -> Unit) :
             val iconRes = if (file.isDirectory) R.drawable.ic_dir else file.type.toIconRes()
             icon.setImageDrawable(ContextCompat.getDrawable(root.context, iconRes))
             root.setOnClickListener { onClick(file) }
+            iconMore.setOnClickListener { onMoreClick(file, iconMore) }
         }
     }
 }

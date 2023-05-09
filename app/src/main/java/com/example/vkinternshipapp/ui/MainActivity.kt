@@ -24,13 +24,15 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.vkinternshipapp.R
 import com.example.vkinternshipapp.core.Constants
 import com.example.vkinternshipapp.core.launchOnLifecycle
+import com.example.vkinternshipapp.core.showPopup
 import com.example.vkinternshipapp.core.toCharSequence
 import com.example.vkinternshipapp.models.FileModel
 import com.example.vkinternshipapp.ui.adapter.FileAdapter
 import java.io.File
 
 class MainActivity : AppCompatActivity(R.layout.activity_main) {
-    private val fileAdapter by lazy { FileAdapter(::onClick) }
+    private val fileAdapter by lazy { FileAdapter(::onClick, ::onMoreClick) }
+
     private val viewModel by viewModels<MainViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -102,6 +104,22 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         }
     }
 
+    private fun onMoreClick(file: FileModel, view: View) {
+        view.showPopup(R.menu.file_popup) {
+            when (it.itemId) {
+                R.id.open_file -> {
+                    openFile(file)
+                    true
+                }
+                R.id.share_file -> {
+                    shareFile(file)
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
     private fun openFile(file: FileModel) {
         val uri = FileProvider.getUriForFile(
             applicationContext,
@@ -114,6 +132,24 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
         }
         startActivity(intent)
+    }
+
+    private fun shareFile(file: FileModel) {
+        val uri = FileProvider.getUriForFile(
+            applicationContext,
+            Constants.PROVIDER_AUTHORITY,
+            File(file.path)
+        )
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            setDataAndType(uri, type)
+            putExtra(Intent.EXTRA_SUBJECT, getString(R.string.app_name))
+            putExtra(
+                Intent.EXTRA_TEXT,
+                getString(R.string.file_name_with_ext, file.name, file.type)
+            )
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        }
+        startActivity(Intent.createChooser(intent, getString(R.string.chooser_title_share_file)))
     }
 
     private fun doOnPermissions(block: () -> Unit) {

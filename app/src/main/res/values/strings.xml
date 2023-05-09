@@ -13,5 +13,8 @@
     <string name="msg_empty_folder">Folder is empty</string>
     <string name="msg_permissions_not_granted">Permissions not granted</string>
     <string name="file_icon_cd">File icon</string>
-    <string name="ic_more_actions">More actions</string>
+    <string name="more_actions_cd">More actions</string>
+    <string name="menu_open_file">Open file</string>
+    <string name="menu_share_file">Share file</string>
+    <string name="chooser_title_share_file">Share File</string>
 </resources>
