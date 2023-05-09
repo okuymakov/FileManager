@@ -10,6 +10,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.vkinternshipapp.R
+import com.example.vkinternshipapp.filemanager.SortType
+import com.example.vkinternshipapp.models.FileModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -59,10 +61,27 @@ fun AppCompatActivity.launchOnLifecycle(
     }
 }
 
-fun View.showPopup(@MenuRes menuRes: Int, onClick: ((MenuItem) -> Boolean)? = null) {
-    PopupMenu(context, this).apply {
+fun View.showPopup(@MenuRes menuRes: Int, onClick: ((MenuItem) -> Boolean)? = null): PopupMenu {
+    return PopupMenu(context, this).apply {
         setOnMenuItemClickListener(onClick)
         menuInflater.inflate(menuRes, menu)
         show()
     }
+}
+
+fun List<FileModel>.sort(
+    sortType: SortType = SortType.BY_SIZE,
+    isDescending: Boolean = false
+): List<FileModel> {
+    val comparable: (FileModel) -> Comparable<*> = {
+        when (sortType) {
+            SortType.BY_NAME -> it.name
+            SortType.BY_SIZE -> it.size
+            SortType.BY_DATE -> it.createdAt
+            SortType.BY_TYPE -> it.type
+        }
+    }
+    return sortedWith(compareBy<FileModel> { !it.isDirectory }.run {
+        if (isDescending) thenByDescending(comparable) else thenBy(comparable)
+    })
 }

@@ -1,5 +1,6 @@
 package com.example.vkinternshipapp.filemanager
 
+import com.example.vkinternshipapp.core.sort
 import com.example.vkinternshipapp.models.FileModel
 import kotlinx.coroutines.*
 import java.io.File
@@ -28,20 +29,27 @@ class FileManager(
         }
     }
 
-    suspend fun fetchFiles(): List<FileModel> = withContext(dispatcher) {
-        val dirPath = stack.peek()
-        dirPath?.let { File(it) }?.listFiles()?.map { file ->
-            async {
-                FileModel(
-                    name = if (file.isDirectory) file.name else file.nameWithoutExtension,
-                    size = file.length(),
-                    createdAt = Date(file.lastModified()),
-                    isDirectory = file.isDirectory,
-                    type = if (file.isDirectory) "" else file.extension,
-                    path = file.path,
-                    itemsCount = file.listFiles()?.size ?: 0
-                )
-            }
-        }?.awaitAll()?.sortedWith(compareBy({ !it.isDirectory }, { it.name })) ?: emptyList()
+    suspend fun fetchFiles(
+        sortType: SortType = SortType.BY_NAME,
+        isDescending: Boolean = false,
+        showHiddenFiles: Boolean = false
+    ): List<FileModel> = withContext(dispatcher) {
+        val path = stack.peek()
+        path?.let { File(it) }?.listFiles { file -> file.isHidden == showHiddenFiles }
+            ?.map { file ->
+                async {
+                    FileModel(
+                        name = if (file.isDirectory) file.name else file.nameWithoutExtension,
+                        size = file.length(),
+                        createdAt = Date(file.lastModified()),
+                        isDirectory = file.isDirectory,
+                        type = if (file.isDirectory) "" else file.extension,
+                        path = file.path,
+                        itemsCount = file.listFiles()?.size ?: 0
+                    )
+                }
+            }?.awaitAll()?.sort(sortType, isDescending) ?: emptyList()
     }
 }
+
+

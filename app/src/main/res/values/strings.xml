@@ -17,4 +17,10 @@
     <string name="menu_open_file">Open file</string>
     <string name="menu_share_file">Share file</string>
     <string name="chooser_title_share_file">Share File</string>
+    <string name="menu_change_sort_direction">Change sort direction</string>
+    <string name="menu_change_sort_type">Sort by</string>
+    <string name="sort_by_name">Name</string>
+    <string name="sort_by_date">Date</string>
+    <string name="sort_by_type">Type</string>
+    <string name="sort_by_size">Size</string>
 </resources>

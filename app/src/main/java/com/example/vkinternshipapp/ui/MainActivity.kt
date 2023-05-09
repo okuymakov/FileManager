@@ -8,12 +8,15 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.webkit.MimeTypeMap
 import android.widget.FrameLayout
 import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.annotation.IdRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
@@ -26,6 +29,7 @@ import com.example.vkinternshipapp.core.Constants
 import com.example.vkinternshipapp.core.launchOnLifecycle
 import com.example.vkinternshipapp.core.showPopup
 import com.example.vkinternshipapp.core.toCharSequence
+import com.example.vkinternshipapp.filemanager.SortType
 import com.example.vkinternshipapp.models.FileModel
 import com.example.vkinternshipapp.ui.adapter.FileAdapter
 import java.io.File
@@ -74,6 +78,9 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         } else {
             toolbar.setNavigationIcon(R.drawable.ic_arrow_back_24)
         }
+        val iconRes =
+            if (state.isDescending) R.drawable.ic_arrow_down_24 else R.drawable.ic_arrow_up_24
+        toolbar.menu.findItem(R.id.change_sort_direction).setIcon(iconRes)
     }
 
     private fun onEvent(event: MainEvent) {
@@ -91,9 +98,59 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
     }
 
     private fun setupToolbar() {
-        findViewById<Toolbar>(R.id.toolbar).setNavigationOnClickListener {
-            viewModel.onAction(MainAction.MoveBack)
+        findViewById<Toolbar>(R.id.toolbar).apply {
+            setNavigationOnClickListener {
+                viewModel.onAction(MainAction.MoveBack)
+            }
+            setOnMenuItemClickListener { menuItem ->
+                when (menuItem.itemId) {
+                    R.id.change_sort_type -> {
+                        showSortPopup(menuItem.itemId)
+                        true
+                    }
+                    R.id.change_sort_direction -> {
+                        viewModel.onAction(MainAction.ChangeSortDirection)
+                        true
+                    }
+                    else -> false
+                }
+            }
         }
+    }
+
+    private fun showSortPopup(@IdRes id: Int) {
+        findViewById<View>(id).showPopup(R.menu.sort_popup) {
+            val type = when (it.itemId) {
+                R.id.by_name -> {
+                    SortType.BY_NAME
+                }
+                R.id.by_date -> {
+                    SortType.BY_DATE
+                }
+                R.id.by_type -> {
+                    SortType.BY_TYPE
+                }
+                R.id.by_size -> {
+                    SortType.BY_SIZE
+                }
+                else -> null
+            }
+            if (type != null) {
+                it.isChecked = true
+                viewModel.onAction(MainAction.SortBy(type))
+                false
+            } else false
+        }.menu.findCheckedItem().apply { isChecked = true }
+    }
+
+    private fun Menu.findCheckedItem(): MenuItem {
+        val id = when (viewModel.state.value.sortType) {
+            SortType.BY_NAME -> R.id.by_name
+            SortType.BY_SIZE -> R.id.by_size
+            SortType.BY_DATE -> R.id.by_date
+            SortType.BY_TYPE -> R.id.by_type
+        }
+        return findItem(id)
     }
 
     private fun onClick(file: FileModel) {
