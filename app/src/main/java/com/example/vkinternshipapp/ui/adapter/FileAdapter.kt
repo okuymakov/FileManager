@@ -11,7 +11,7 @@ import com.example.vkinternshipapp.R
 import com.example.vkinternshipapp.core.format
 import com.example.vkinternshipapp.core.formatFileSize
 import com.example.vkinternshipapp.core.toIconRes
-import com.example.vkinternshipapp.models.FileModel
+import com.example.vkinternshipapp.domain.models.FileModel
 
 class FileAdapter(
     private val onClick: (FileModel) -> Unit,

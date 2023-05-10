@@ -27,13 +27,16 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.vkinternshipapp.R
 import com.example.vkinternshipapp.core.*
-import com.example.vkinternshipapp.filemanager.SortType
-import com.example.vkinternshipapp.models.FileModel
+import com.example.vkinternshipapp.domain.filemanager.SortType
+import com.example.vkinternshipapp.domain.models.FileModel
 import com.example.vkinternshipapp.ui.adapter.DirSepDecorator
 import com.example.vkinternshipapp.ui.adapter.DirectoryAdapter
 import com.example.vkinternshipapp.ui.adapter.FileAdapter
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 
+
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity(R.layout.activity_main) {
     private val fileAdapter by lazy { FileAdapter(::onFileClick, ::onMoreClick) }
     private val directoryAdapter by lazy { DirectoryAdapter(::onDirectoryClick) }
@@ -44,9 +47,11 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         super.onCreate(savedInstanceState)
         init()
         val permissionManager = PermissionManager {
+            viewModel.onAction(MainAction.GrantPermissions)
             viewModel.onAction(MainAction.FetchFiles)
         }
         if (permissionManager.checkPermissions()) {
+            viewModel.onAction(MainAction.GrantPermissions)
             viewModel.onAction(MainAction.FetchFiles)
         } else {
             findViewById<Button>(R.id.request_permissions).setOnClickListener {
@@ -79,6 +84,8 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         val errorView = findViewById<View>(R.id.error_view)
         val permissionsNotGrantedView = findViewById<View>(R.id.permissions_not_granted_view)
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
+
+        directoryAdapter.submitData(state.paths)
         when {
             state.isLoading -> {
                 loadingView.show()
@@ -114,7 +121,6 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                 filesList.show()
                 errorView.hide()
                 permissionsNotGrantedView.hide()
-                directoryAdapter.submitData(state.paths)
                 fileAdapter.submitData(state.files)
             }
         }
@@ -164,6 +170,10 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                     }
                     R.id.change_sort_direction -> {
                         viewModel.onAction(MainAction.ChangeSortDirection)
+                        true
+                    }
+                    R.id.updated_files -> {
+                        viewModel.onAction(MainAction.FetchUpdated)
                         true
                     }
                     else -> false
@@ -220,17 +230,19 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
     }
 
     private fun onMoreClick(file: FileModel, view: View) {
-        view.showPopup(R.menu.file_popup) {
-            when (it.itemId) {
-                R.id.open_file -> {
-                    openFile(file)
-                    true
+        if (!file.isDirectory) {
+            view.showPopup(R.menu.file_popup) {
+                when (it.itemId) {
+                    R.id.open_file -> {
+                        openFile(file)
+                        true
+                    }
+                    R.id.share_file -> {
+                        shareFile(file)
+                        true
+                    }
+                    else -> false
                 }
-                R.id.share_file -> {
-                    shareFile(file)
-                    true
-                }
-                else -> false
             }
         }
     }
@@ -255,8 +267,10 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             Constants.PROVIDER_AUTHORITY,
             File(file.path)
         )
+        val type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(file.type) ?: "text/plain"
         val intent = Intent(Intent.ACTION_SEND).apply {
-            setDataAndType(uri, type)
+            this.type = type
+            putExtra(Intent.EXTRA_STREAM, uri)
             putExtra(Intent.EXTRA_SUBJECT, getString(R.string.app_name))
             putExtra(
                 Intent.EXTRA_TEXT,
@@ -267,9 +281,10 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         startActivity(Intent.createChooser(intent, getString(R.string.chooser_title_share_file)))
     }
 
-    inner class PermissionManager(onSuccess: () -> Unit) {
+    private inner class PermissionManager(onSuccess: () -> Unit) {
         private var launcherForApi30: ActivityResultLauncher<Intent>? = null
         private var launcherForApi19: ActivityResultLauncher<String>? = null
+
         init {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 launcherForApi30 =
@@ -287,6 +302,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                     }
             }
         }
+
         fun requestPermissions() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 val intent = Intent(

@@ -27,6 +27,7 @@ class DirectoryAdapter(
     }
 
     fun submitData(newData: List<String>) {
+        if (data == newData) return
         val diffCallback = DiffUtilCallback(data, newData)
         val diffResult = DiffUtil.calculateDiff(diffCallback)
         data.clear()
@@ -49,7 +50,7 @@ class DirectoryAdapter(
         override fun getNewListSize(): Int = newList.size
 
         override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-            return oldList[oldItemPosition] === newList[newItemPosition]
+            return oldList[oldItemPosition] == newList[newItemPosition]
         }
 
         override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {

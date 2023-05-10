@@ -1,4 +1,4 @@
-package com.example.vkinternshipapp.models
+package com.example.vkinternshipapp.domain.models
 
 import java.util.*
 

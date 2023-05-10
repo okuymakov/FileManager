@@ -1,6 +1,7 @@
 package com.example.vkinternshipapp.core
 
 import android.content.Context
+import android.util.Log
 import android.view.MenuItem
 import android.view.View
 import androidx.annotation.MenuRes
@@ -10,11 +11,15 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.vkinternshipapp.R
-import com.example.vkinternshipapp.filemanager.SortType
-import com.example.vkinternshipapp.models.FileModel
+import com.example.vkinternshipapp.domain.filemanager.SortType
+import com.example.vkinternshipapp.domain.models.FileModel
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
+import java.math.BigInteger
+import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -98,4 +103,21 @@ fun List<FileModel>.sort(
 fun String.directoryName(context: Context): CharSequence {
     return if (this == Constants.ROOT_PATH) context.getString(R.string.root_dir_name)
     else substringAfterLast(File.separator)
+}
+
+suspend fun File.getHash(): String = withContext(Dispatchers.IO) {
+    val messageDigest = MessageDigest.getInstance("MD5")
+    val buffer = ByteArray(1000)
+    inputStream().buffered().use {
+        while (true) {
+            val sz = it.read(buffer)
+            messageDigest.update(buffer)
+            if (sz <= 0) break
+        }
+    }
+
+    var hash = BigInteger(1, messageDigest.digest()).toString(16)
+    hash = String.format("%32s", hash).replace(' ', '0')
+    Log.d("Saving hashes", "$name   hash: $hash")
+    hash
 }

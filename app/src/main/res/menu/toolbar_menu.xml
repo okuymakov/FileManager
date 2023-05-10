@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item android:id="@+id/updated_files"
+        android:icon="@drawable/ic_update_24"
+        android:title="@string/menu_change_sort_type"
+        app:showAsAction="ifRoom"/>
     <item android:id="@+id/change_sort_type"
         android:icon="@drawable/ic_sort_24"
         android:title="@string/menu_change_sort_type"

@@ -1,4 +1,4 @@
-package com.example.vkinternshipapp.filemanager
+package com.example.vkinternshipapp.domain.filemanager
 
 enum class SortType {
     BY_NAME,

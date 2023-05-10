@@ -1,7 +1,7 @@
 package com.example.vkinternshipapp.ui
 
-import com.example.vkinternshipapp.filemanager.SortType
-import com.example.vkinternshipapp.models.FileModel
+import com.example.vkinternshipapp.domain.filemanager.SortType
+import com.example.vkinternshipapp.domain.models.FileModel
 
 data class MainState(
     val files: List<FileModel> = emptyList(),
