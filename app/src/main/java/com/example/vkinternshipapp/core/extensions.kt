@@ -14,6 +14,7 @@ import com.example.vkinternshipapp.filemanager.SortType
 import com.example.vkinternshipapp.models.FileModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -61,6 +62,14 @@ fun AppCompatActivity.launchOnLifecycle(
     }
 }
 
+fun View.show() {
+    visibility = View.VISIBLE
+}
+
+fun View.hide() {
+    visibility = View.GONE
+}
+
 fun View.showPopup(@MenuRes menuRes: Int, onClick: ((MenuItem) -> Boolean)? = null): PopupMenu {
     return PopupMenu(context, this).apply {
         setOnMenuItemClickListener(onClick)
@@ -84,4 +93,9 @@ fun List<FileModel>.sort(
     return sortedWith(compareBy<FileModel> { !it.isDirectory }.run {
         if (isDescending) thenByDescending(comparable) else thenBy(comparable)
     })
+}
+
+fun String.directoryName(context: Context): CharSequence {
+    return if (this == Constants.ROOT_PATH) context.getString(R.string.root_dir_name)
+    else substringAfterLast(File.separator)
 }

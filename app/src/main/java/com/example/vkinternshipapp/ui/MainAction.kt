@@ -7,4 +7,5 @@ sealed class MainAction {
     data class MoveBack(val path: String? = null) : MainAction()
     object ChangeSortDirection : MainAction()
     data class SortBy(val sortType: SortType) : MainAction()
+    object FetchFiles : MainAction()
 }

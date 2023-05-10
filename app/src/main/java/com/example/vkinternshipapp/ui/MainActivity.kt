@@ -1,7 +1,6 @@
 package com.example.vkinternshipapp.ui
 
 import android.Manifest
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -13,8 +12,9 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.webkit.MimeTypeMap
-import android.widget.FrameLayout
+import android.widget.Button
 import androidx.activity.addCallback
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.annotation.IdRes
@@ -26,9 +26,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.vkinternshipapp.R
-import com.example.vkinternshipapp.core.Constants
-import com.example.vkinternshipapp.core.launchOnLifecycle
-import com.example.vkinternshipapp.core.showPopup
+import com.example.vkinternshipapp.core.*
 import com.example.vkinternshipapp.filemanager.SortType
 import com.example.vkinternshipapp.models.FileModel
 import com.example.vkinternshipapp.ui.adapter.DirSepDecorator
@@ -44,17 +42,28 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setupToolbar()
-        doOnPermissions {
-            setupList()
-        }
         init()
+        val permissionManager = PermissionManager {
+            viewModel.onAction(MainAction.FetchFiles)
+        }
+        if (permissionManager.checkPermissions()) {
+            viewModel.onAction(MainAction.FetchFiles)
+        } else {
+            findViewById<Button>(R.id.request_permissions).setOnClickListener {
+                permissionManager.requestPermissions()
+            }
+        }
         onBackPressedDispatcher.addCallback {
             viewModel.onAction(MainAction.MoveBack())
         }
     }
 
     private fun init() {
+        setupToolbar()
+        setupList()
+        findViewById<Button>(R.id.try_again).setOnClickListener {
+            viewModel.onAction(MainAction.FetchFiles)
+        }
         launchOnLifecycle(Lifecycle.State.STARTED) {
             viewModel.state.collect(::onState)
         }
@@ -65,19 +74,53 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
     private fun onState(state: MainState) {
         val filesList = findViewById<RecyclerView>(R.id.files_list)
-        val emptyView = findViewById<FrameLayout>(R.id.empty_view)
+        val emptyView = findViewById<View>(R.id.empty_view)
+        val loadingView = findViewById<View>(R.id.loading_view)
+        val errorView = findViewById<View>(R.id.error_view)
+        val permissionsNotGrantedView = findViewById<View>(R.id.permissions_not_granted_view)
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
-
-        directoryAdapter.submitData(state.paths)
-        if (state.files.isEmpty()) {
-            emptyView.visibility = View.VISIBLE
-            filesList.visibility = View.GONE
-        } else {
-            emptyView.visibility = View.GONE
-            filesList.visibility = View.VISIBLE
-            fileAdapter.submitData(state.files)
+        when {
+            state.isLoading -> {
+                loadingView.show()
+                emptyView.hide()
+                filesList.hide()
+                errorView.hide()
+                permissionsNotGrantedView.hide()
+            }
+            state.permissionsNotGranted -> {
+                loadingView.hide()
+                emptyView.hide()
+                filesList.hide()
+                errorView.hide()
+                permissionsNotGrantedView.show()
+            }
+            state.isError -> {
+                loadingView.hide()
+                emptyView.hide()
+                filesList.hide()
+                errorView.show()
+                permissionsNotGrantedView.hide()
+            }
+            state.files.isEmpty() -> {
+                loadingView.hide()
+                emptyView.show()
+                filesList.hide()
+                errorView.hide()
+                permissionsNotGrantedView.hide()
+            }
+            else -> {
+                loadingView.hide()
+                emptyView.hide()
+                filesList.show()
+                errorView.hide()
+                permissionsNotGrantedView.hide()
+                directoryAdapter.submitData(state.paths)
+                fileAdapter.submitData(state.files)
+            }
         }
-        toolbar.title = state.paths.firstOrNull()?.directoryName(this) ?: ""
+        state.paths.firstOrNull()?.directoryName(this)?.let {
+            toolbar.title = it
+        }
         if (state.isRoot) {
             toolbar.navigationIcon = null
         } else {
@@ -103,7 +146,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         findViewById<RecyclerView>(R.id.directories_list).apply {
             layoutManager =
                 LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, true)
-            addItemDecoration(DirSepDecorator(context,R.drawable.ic_arrow_right_24))
+            addItemDecoration(DirSepDecorator(context, R.drawable.ic_arrow_right_24))
             adapter = directoryAdapter
         }
     }
@@ -224,49 +267,47 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         startActivity(Intent.createChooser(intent, getString(R.string.chooser_title_share_file)))
     }
 
-    private fun doOnPermissions(block: () -> Unit) {
-        if (checkPermissions()) {
-            block()
-        } else {
-            requestPermissions {
-                block()
+    inner class PermissionManager(onSuccess: () -> Unit) {
+        private var launcherForApi30: ActivityResultLauncher<Intent>? = null
+        private var launcherForApi19: ActivityResultLauncher<String>? = null
+        init {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                launcherForApi30 =
+                    registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+                        if (Environment.isExternalStorageManager()) {
+                            onSuccess()
+                        }
+                    }
+            } else {
+                launcherForApi19 =
+                    registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+                        if (isGranted) {
+                            onSuccess()
+                        }
+                    }
+            }
+        }
+        fun requestPermissions() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val intent = Intent(
+                    Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                    Uri.parse(Constants.SETTINGS_URI)
+                )
+                launcherForApi30?.launch(intent)
+            } else {
+                launcherForApi19?.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
+        }
+
+        fun checkPermissions(): Boolean {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                Environment.isExternalStorageManager()
+            } else {
+                ContextCompat.checkSelfPermission(
+                    this@MainActivity,
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+                ) == PackageManager.PERMISSION_GRANTED
             }
         }
     }
-
-    private fun checkPermissions(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            Environment.isExternalStorageManager()
-        } else {
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            ) == PackageManager.PERMISSION_GRANTED
-        }
-    }
-
-    private fun requestPermissions(onSuccess: () -> Unit) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val intent = Intent(
-                Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
-                Uri.parse(Constants.SETTINGS_URI)
-            )
-            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-                if (Environment.isExternalStorageManager()) {
-                    onSuccess()
-                }
-            }.launch(intent)
-        } else {
-            registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
-                if (isGranted) {
-                    onSuccess()
-                }
-            }.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
-        }
-    }
-}
-
-fun String.directoryName(context: Context): CharSequence {
-    return if (this == Constants.ROOT_PATH) context.getString(R.string.root_dir_name)
-    else substringAfterLast(File.separator)
 }

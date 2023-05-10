@@ -2,6 +2,7 @@ package com.example.vkinternshipapp.filemanager
 
 import com.example.vkinternshipapp.core.sort
 import com.example.vkinternshipapp.models.FileModel
+import com.example.vkinternshipapp.core.Result
 import kotlinx.coroutines.*
 import java.io.File
 import java.util.*
@@ -12,7 +13,7 @@ class FileManager(
 ) {
     private val stack =
         ArrayDeque<String>().apply { push(root) }
-    
+
     val isRoot: Boolean get() = stack.size == 1
     val paths: List<String> get() = stack.toList()
 
@@ -41,10 +42,12 @@ class FileManager(
         sortType: SortType = SortType.BY_NAME,
         isDescending: Boolean = false,
         showHiddenFiles: Boolean = false
-    ): List<FileModel> = withContext(dispatcher) {
-        val path = stack.peek()
-        path?.let { File(it) }?.listFiles { file -> file.isHidden == showHiddenFiles }
-            ?.map { file ->
+    ): Result<List<FileModel>> = withContext(dispatcher) {
+        try {
+            val path = stack.peek() ?: throw IllegalStateException("Stack is empty")
+            val files =
+                File(path).listFiles { file -> file.isHidden == showHiddenFiles } ?: emptyArray()
+            val data = files.map { file ->
                 async {
                     FileModel(
                         name = if (file.isDirectory) file.name else file.nameWithoutExtension,
@@ -56,7 +59,11 @@ class FileManager(
                         itemsCount = file.listFiles()?.size ?: 0
                     )
                 }
-            }?.awaitAll()?.sort(sortType, isDescending) ?: emptyList()
+            }.awaitAll().sort(sortType, isDescending)
+            Result.Success(data)
+        } catch (ex: Exception) {
+            Result.Failure(ex)
+        }
     }
 }
 

@@ -11,7 +11,10 @@
         <item quantity="other">%1$d items</item>
     </plurals>
     <string name="msg_empty_folder">Folder is empty</string>
-    <string name="msg_permissions_not_granted">Permissions not granted</string>
+    <string name="msg_permissions_not_granted">You don\'t have permissions!</string>
+    <string name="msg_error">Something went wrong!</string>
+    <string name="btn_try_again">Try again</string>
+    <string name="btn_request_permissions">Request permissions</string>
     <string name="file_icon_cd">File icon</string>
     <string name="more_actions_cd">More actions</string>
     <string name="menu_open_file">Open file</string>

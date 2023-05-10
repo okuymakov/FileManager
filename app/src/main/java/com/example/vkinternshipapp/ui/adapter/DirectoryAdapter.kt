@@ -7,7 +7,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.example.vkinternshipapp.R
-import com.example.vkinternshipapp.ui.directoryName
+import com.example.vkinternshipapp.core.directoryName
 
 class DirectoryAdapter(
     private val onClick: (String) -> Unit,
