@@ -11,5 +11,6 @@ data class MainState(
     val paths: List<String> = emptyList(),
     val isRoot: Boolean = true,
     val sortType: SortType = SortType.BY_NAME,
-    val isDescending: Boolean = false
+    val isDescending: Boolean = false,
+    val isUpdatedOnly: Boolean = false
 )

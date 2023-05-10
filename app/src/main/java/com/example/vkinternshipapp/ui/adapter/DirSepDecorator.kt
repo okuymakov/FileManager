@@ -30,7 +30,7 @@ class DirSepDecorator(
         for (i in 1 until childCount) {
             val child = parent.getChildAt(i)
             val params = child.layoutParams as RecyclerView.LayoutParams
-            val left = child.right + params.rightMargin
+            val left = (child.right + child.translationX + params.rightMargin).toInt()
             val right = left + size
             divider?.setBounds(left, top, right, bottom)
             divider?.draw(canvas)

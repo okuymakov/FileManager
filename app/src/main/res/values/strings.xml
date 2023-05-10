@@ -26,4 +26,5 @@
     <string name="sort_by_date">Date</string>
     <string name="sort_by_type">Type</string>
     <string name="sort_by_size">Size</string>
+    <string name="updated_files_title">Recently</string>
 </resources>

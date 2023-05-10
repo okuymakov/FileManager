@@ -79,6 +79,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
     private fun onState(state: MainState) {
         val filesList = findViewById<RecyclerView>(R.id.files_list)
+        val directoriesList = findViewById<RecyclerView>(R.id.directories_list)
         val emptyView = findViewById<View>(R.id.empty_view)
         val loadingView = findViewById<View>(R.id.loading_view)
         val errorView = findViewById<View>(R.id.error_view)
@@ -124,13 +125,20 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                 fileAdapter.submitData(state.files)
             }
         }
-        state.paths.firstOrNull()?.directoryName(this)?.let {
-            toolbar.title = it
-        }
-        if (state.isRoot) {
-            toolbar.navigationIcon = null
-        } else {
+        if (state.isUpdatedOnly) {
+            directoriesList.hide()
+            toolbar.title = getString(R.string.updated_files_title)
             toolbar.setNavigationIcon(R.drawable.ic_arrow_back_24)
+        } else {
+            directoriesList.show()
+            state.paths.firstOrNull()?.directoryName(this)?.let {
+                toolbar.title = it
+            }
+            if (state.isRoot) {
+                toolbar.navigationIcon = null
+            } else {
+                toolbar.setNavigationIcon(R.drawable.ic_arrow_back_24)
+            }
         }
         val iconRes =
             if (state.isDescending) R.drawable.ic_arrow_down_24 else R.drawable.ic_arrow_up_24
@@ -149,12 +157,18 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             adapter = fileAdapter
             setHasFixedSize(true)
         }
-        findViewById<RecyclerView>(R.id.directories_list).apply {
+        val directoriesList = findViewById<RecyclerView>(R.id.directories_list).apply {
             layoutManager =
                 LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, true)
             addItemDecoration(DirSepDecorator(context, R.drawable.ic_arrow_right_24))
             adapter = directoryAdapter
         }
+        directoryAdapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
+            override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
+                super.onItemRangeInserted(positionStart, itemCount)
+                directoriesList.smoothScrollToPosition(0)
+            }
+        })
     }
 
     private fun setupToolbar() {

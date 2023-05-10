@@ -22,17 +22,6 @@ import java.math.BigInteger
 import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.*
-
-fun String.toIconRes() = when (substring(lastIndexOf('.') + 1)) {
-    "jpg" -> R.drawable.ic_file_jpg
-    "mp3" -> R.drawable.ic_file_mp3
-    "mp4" -> R.drawable.ic_file_mp4
-    "txt" -> R.drawable.ic_file_txt
-    "pdf" -> R.drawable.ic_file_pdf
-    "docx" -> R.drawable.ic_file_docx
-    else -> R.drawable.ic_file_txt
-}
-
 fun Date.format(pattern: String): String {
     return SimpleDateFormat(pattern, Locale.getDefault()).format(this)
 }
@@ -107,7 +96,7 @@ fun String.directoryName(context: Context): CharSequence {
 
 suspend fun File.getHash(): String = withContext(Dispatchers.IO) {
     val messageDigest = MessageDigest.getInstance("MD5")
-    val buffer = ByteArray(1000)
+    val buffer = ByteArray(2048)
     inputStream().buffered().use {
         while (true) {
             val sz = it.read(buffer)

@@ -65,7 +65,8 @@ class MainViewModel @Inject constructor(
                         isDescending = isDescending,
                         sortType = sortType,
                         isError = false,
-                        isLoading = false
+                        isLoading = false,
+                        isUpdatedOnly = updatedOnly
                     )
                     is Result.Failure -> _state.value.copy(isError = true, isLoading = false)
                 }
@@ -75,7 +76,9 @@ class MainViewModel @Inject constructor(
 
     fun onAction(action: MainAction) {
         when (action) {
-            is MainAction.MoveBack -> moveBack(action.path)
+            is MainAction.MoveBack -> if (_state.value.isUpdatedOnly) {
+                fetchFiles()
+            } else moveBack(action.path)
             is MainAction.MoveToDirectory -> moveToDirectory(action.path)
             MainAction.ChangeSortDirection -> fetchFiles(isDescending = !_state.value.isDescending)
             is MainAction.SortBy -> fetchFiles(action.sortType)

@@ -2,6 +2,7 @@ package com.example.vkinternshipapp.di
 
 import android.content.Context
 import androidx.room.Room
+import com.example.vkinternshipapp.core.Constants
 import com.example.vkinternshipapp.data.AppDatabase
 import com.example.vkinternshipapp.data.FileHashDao
 import dagger.Module
@@ -18,7 +19,7 @@ class DbModule {
     fun provideDb(@ApplicationContext context: Context): AppDatabase {
         return Room.databaseBuilder(
             context,
-            AppDatabase::class.java, "FileManager"
+            AppDatabase::class.java, Constants.DB_NAME
         ).build()
     }
 
