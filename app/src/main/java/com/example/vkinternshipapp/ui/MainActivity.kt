@@ -1,6 +1,7 @@
 package com.example.vkinternshipapp.ui
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -28,14 +29,16 @@ import com.example.vkinternshipapp.R
 import com.example.vkinternshipapp.core.Constants
 import com.example.vkinternshipapp.core.launchOnLifecycle
 import com.example.vkinternshipapp.core.showPopup
-import com.example.vkinternshipapp.core.toCharSequence
 import com.example.vkinternshipapp.filemanager.SortType
 import com.example.vkinternshipapp.models.FileModel
+import com.example.vkinternshipapp.ui.adapter.DirSepDecorator
+import com.example.vkinternshipapp.ui.adapter.DirectoryAdapter
 import com.example.vkinternshipapp.ui.adapter.FileAdapter
 import java.io.File
 
 class MainActivity : AppCompatActivity(R.layout.activity_main) {
-    private val fileAdapter by lazy { FileAdapter(::onClick, ::onMoreClick) }
+    private val fileAdapter by lazy { FileAdapter(::onFileClick, ::onMoreClick) }
+    private val directoryAdapter by lazy { DirectoryAdapter(::onDirectoryClick) }
 
     private val viewModel by viewModels<MainViewModel>()
 
@@ -47,7 +50,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         }
         init()
         onBackPressedDispatcher.addCallback {
-            viewModel.onAction(MainAction.MoveBack)
+            viewModel.onAction(MainAction.MoveBack())
         }
     }
 
@@ -61,9 +64,11 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
     }
 
     private fun onState(state: MainState) {
-        val filesList = findViewById<RecyclerView>(R.id.files_List)
+        val filesList = findViewById<RecyclerView>(R.id.files_list)
         val emptyView = findViewById<FrameLayout>(R.id.empty_view)
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
+
+        directoryAdapter.submitData(state.paths)
         if (state.files.isEmpty()) {
             emptyView.visibility = View.VISIBLE
             filesList.visibility = View.GONE
@@ -72,7 +77,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             filesList.visibility = View.VISIBLE
             fileAdapter.submitData(state.files)
         }
-        toolbar.title = state.directories.last().toCharSequence(this)
+        toolbar.title = state.paths.firstOrNull()?.directoryName(this) ?: ""
         if (state.isRoot) {
             toolbar.navigationIcon = null
         } else {
@@ -90,17 +95,23 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
     }
 
     private fun setupList() {
-        findViewById<RecyclerView>(R.id.files_List).apply {
+        findViewById<RecyclerView>(R.id.files_list).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = fileAdapter
             setHasFixedSize(true)
+        }
+        findViewById<RecyclerView>(R.id.directories_list).apply {
+            layoutManager =
+                LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, true)
+            addItemDecoration(DirSepDecorator(context,R.drawable.ic_arrow_right_24))
+            adapter = directoryAdapter
         }
     }
 
     private fun setupToolbar() {
         findViewById<Toolbar>(R.id.toolbar).apply {
             setNavigationOnClickListener {
-                viewModel.onAction(MainAction.MoveBack)
+                viewModel.onAction(MainAction.MoveBack())
             }
             setOnMenuItemClickListener { menuItem ->
                 when (menuItem.itemId) {
@@ -153,7 +164,11 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         return findItem(id)
     }
 
-    private fun onClick(file: FileModel) {
+    private fun onDirectoryClick(dirPath: String) {
+        viewModel.onAction(MainAction.MoveBack(dirPath))
+    }
+
+    private fun onFileClick(file: FileModel) {
         if (file.isDirectory) {
             viewModel.onAction(MainAction.MoveToDirectory(file.path))
         } else {
@@ -249,4 +264,9 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             }.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
         }
     }
+}
+
+fun String.directoryName(context: Context): CharSequence {
+    return if (this == Constants.ROOT_PATH) context.getString(R.string.root_dir_name)
+    else substringAfterLast(File.separator)
 }

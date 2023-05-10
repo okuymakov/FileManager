@@ -2,8 +2,7 @@ package com.example.vkinternshipapp.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.vkinternshipapp.R
-import com.example.vkinternshipapp.core.*
+import com.example.vkinternshipapp.core.Constants
 import com.example.vkinternshipapp.filemanager.FileManager
 import com.example.vkinternshipapp.filemanager.SortType
 import kotlinx.coroutines.channels.Channel
@@ -11,7 +10,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import java.io.File
 
 class MainViewModel(
     private val fileManager: FileManager = FileManager(Constants.ROOT_PATH)
@@ -32,8 +30,8 @@ class MainViewModel(
         fetchFiles()
     }
 
-    private fun moveBack() {
-        if (fileManager.moveBack()) {
+    private fun moveBack(path: String?) {
+        if (path?.let { fileManager.moveBack(it) } ?: fileManager.moveBack()) {
             fetchFiles()
         } else {
             viewModelScope.launch {
@@ -47,14 +45,11 @@ class MainViewModel(
         isDescending: Boolean = _state.value.isDescending
     ) {
         viewModelScope.launch {
-            val dirs = fileManager.currentPath
-                ?.replace(Constants.ROOT_PATH, "")?.split(File.separator)
-                ?.filterNot { it.isBlank() }?.map { DynamicString(it) } ?: emptyList()
             _state.emit(
                 _state.value.copy(
                     files = fileManager.fetchFiles(sortType, isDescending),
                     isRoot = fileManager.isRoot,
-                    directories = listOf(StringResource(R.string.root_dir_name)) + dirs,
+                    paths = fileManager.paths,
                     isDescending = isDescending,
                     sortType = sortType
                 )
@@ -64,7 +59,7 @@ class MainViewModel(
 
     fun onAction(action: MainAction) {
         when (action) {
-            MainAction.MoveBack -> moveBack()
+            is MainAction.MoveBack -> moveBack(action.path)
             is MainAction.MoveToDirectory -> moveToDirectory(action.path)
             MainAction.ChangeSortDirection -> fetchFiles(isDescending = !_state.value.isDescending)
             is MainAction.SortBy -> fetchFiles(action.sortType)

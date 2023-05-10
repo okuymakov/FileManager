@@ -12,9 +12,9 @@ class FileManager(
 ) {
     private val stack =
         ArrayDeque<String>().apply { push(root) }
-
-    val currentPath: String? get() = stack.peek()
+    
     val isRoot: Boolean get() = stack.size == 1
+    val paths: List<String> get() = stack.toList()
 
     fun moveToDirectory(path: String) {
         stack.push(path)
@@ -27,6 +27,14 @@ class FileManager(
             stack.pop()
             true
         }
+    }
+
+    fun moveBack(path: String): Boolean {
+        if (!stack.contains(path)) return false
+        while (stack.peek() != path) {
+            stack.pop()
+        }
+        return true
     }
 
     suspend fun fetchFiles(

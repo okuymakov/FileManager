@@ -9,9 +9,9 @@
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appbar_layout"
+        android:background="@color/white"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="top">
+        android:layout_height="wrap_content">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
@@ -19,11 +19,19 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:menu="@menu/toolbar_menu"
-            app:title="FileManager" />
+            app:title="@string/root_dir_name" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/directories_list"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            tools:listitem="@layout/item_directory"
+            tools:orientation="horizontal" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/files_List"
+        android:id="@+id/files_list"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior"
@@ -32,14 +40,15 @@
 
     <FrameLayout
         android:id="@+id/empty_view"
-        android:visibility="gone"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:visibility="gone">
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="20sp"
             android:layout_gravity="center"
-            android:text="@string/msg_empty_folder" />
+            android:text="@string/msg_empty_folder"
+            android:textSize="20sp" />
     </FrameLayout>
 </LinearLayout>
